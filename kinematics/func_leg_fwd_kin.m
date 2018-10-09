@@ -29,30 +29,29 @@ alpha6 = x(6);
 
 p1 = [0,0].';   %p1
 
-p2 = [-e1,0].';     % p2
-  
-p3 = [Rc1*cos(q2) - e1, -Rc1*sin(q2)].';    % p3
- 
+p2 = [-e1,0].';
+
+p3 = [Rc1*cos(q2) - e1, -Rc1*sin(q2)].';
+
 p4 = [Rc1*cos(q2) - e1 + cos(alpha1 - q2)*(Rc2 - e3),...
-      sin(alpha1 - q2)*(Rc2 - e3) - Rc1*sin(q2)].';     % p4
- 
+      sin(alpha1 - q2)*(Rc2 - e3) - Rc1*sin(q2)].';
+
 p5 = [e2*cos(alpha1 + alpha2 - q2) - e1 + Rc1*cos(q2) + Rc2*cos(alpha1 - q2) - e3*cos(alpha1 - q2),...
-      e2*sin(alpha1 + alpha2 - q2) - Rc1*sin(q2) + Rc2*sin(alpha1 - q2) - e3*sin(alpha1 - q2)].';       % p5
-% 
+      e2*sin(alpha1 + alpha2 - q2) - Rc1*sin(q2) + Rc2*sin(alpha1 - q2) - e3*sin(alpha1 - q2)].';
+  
 p6 = [Rc1*cos(q2) - cos(alpha1 + alpha2 - q2)*(R2 - e2) - e1 + cos(alpha1 - q2)*(Rc2 - e3),...
-      sin(alpha1 - q2)*(Rc2 - e3) - Rc1*sin(q2) - sin(alpha1 + alpha2 - q2)*(R2 - e2)].';
-
-
+      sin(alpha1 - q2)*(Rc2 - e3) - Rc1*sin(q2) - sin(alpha1 + alpha2 - q2)*(R2 - e2)].';  
+  
 p7 = [e2*cos(alpha1 + alpha2 - q2) - R2*cos(alpha1 + alpha2 - q2) - e1 - e4*cos(alpha1 + alpha2 + alpha4 - q2) + Rc1*cos(q2) + Rc2*cos(alpha1 - q2) - e3*cos(alpha1 - q2),...
-      e2*sin(alpha1 + alpha2 - q2) - R2*sin(alpha1 + alpha2 - q2) - e4*sin(alpha1 + alpha2 + alpha4 - q2) - Rc1*sin(q2) + Rc2*sin(alpha1 - q2) - e3*sin(alpha1 - q2)].';
-
+      e2*sin(alpha1 + alpha2 - q2) - R2*sin(alpha1 + alpha2 - q2) - e4*sin(alpha1 + alpha2 + alpha4 - q2) - Rc1*sin(q2) + Rc2*sin(alpha1 - q2) - e3*sin(alpha1 - q2)].';  
 
 p8 = [ e2*cos(alpha1 + alpha2 - q2) - R2*cos(alpha1 + alpha2 - q2) - e1 - e4*cos(alpha1 + alpha2 + alpha4 - q2) + Rc1*cos(q2) + Rc2*cos(alpha1 - q2) - e3*cos(alpha1 - q2) - Rc3*cos(alpha1 + alpha2 + alpha4 + alpha5 - q2),...
       e2*sin(alpha1 + alpha2 - q2) - R2*sin(alpha1 + alpha2 - q2) - e4*sin(alpha1 + alpha2 + alpha4 - q2) - Rc1*sin(q2) + Rc2*sin(alpha1 - q2) - e3*sin(alpha1 - q2) - Rc3*sin(alpha1 + alpha2 + alpha4 + alpha5 - q2)].';
 
 p9 = [e2*cos(alpha1 + alpha2 - q2) - R2*cos(alpha1 + alpha2 - q2) - e1 - R3*cos(alpha1 + alpha2 + alpha4 - q2) + Rc1*cos(q2) + Rc2*cos(alpha1 - q2) - e3*cos(alpha1 - q2),...
       e2*sin(alpha1 + alpha2 - q2) - R2*sin(alpha1 + alpha2 - q2) - R3*sin(alpha1 + alpha2 + alpha4 - q2) - Rc1*sin(q2) + Rc2*sin(alpha1 - q2) - e3*sin(alpha1 - q2)].';
-  
+
+
 v1 = [];
 v2 = [];
 v3 = [];

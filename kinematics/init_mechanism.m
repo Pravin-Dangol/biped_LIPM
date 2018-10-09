@@ -55,6 +55,10 @@ disp('computing fwd kinematics terms ...');
 [p1,p2,p3,p4,p5,p6,p7,p8,p9,v1,v2,v3,v4,v5,v6,v7,v8,v9] = ...
     func_leg_fwd_kin(x_sol, q1, q2, R1, R2, R3, Rc1, Rc2, Rc3, e1, e2, e3, e4);
 
+% coordinates of the virtual leg
+p_h = (p1+p2)./2;
+p_e = p9;
+
 %   
 % plot leg mechanism
 scrsz = get(groot,'ScreenSize');
@@ -89,6 +93,8 @@ line(ah,[p2(1),p3(1)],[p2(2),p3(2)],'Color','b');
 line(ah,[p3(1),p4(1)],[p3(2),p4(2)],'Color','b');  
 line(ah,[p4(1),p5(1)],[p4(2),p5(2)],'Color','b');  
 line(ah,[p5(1),p1(1)],[p5(2),p1(2)],'Color','b');  
+line(ah,[p1(1),p3(1)],[p1(2),p3(2)],'Color','r','LineStyle','--');  
+line(ah,[p3(1),p5(1)],[p3(2),p5(2)],'Color','r','LineStyle','--');  
 
 % second loop
 line(ah,[p6(1),p4(1)],[p6(2),p4(2)],'Color','b');  
@@ -96,6 +102,11 @@ line(ah,[p7(1),p6(1)],[p7(2),p6(2)],'Color','b');
 line(ah,[p8(1),p7(1)],[p8(2),p7(2)],'Color','b');
 line(ah,[p4(1),p8(1)],[p4(2),p8(2)],'Color','b');  
 line(ah,[p9(1),p7(1)],[p9(2),p7(2)],'Color','b');  
+line(ah,[p6(1),p8(1)],[p6(2),p8(2)],'Color','r','LineStyle','--');  
+
+% virtual leg
+line(ah,[p_h(1),p_e(1)],[p_h(2),p_e(2)],'Color','g','LineStyle','--');  
+
 
 
           

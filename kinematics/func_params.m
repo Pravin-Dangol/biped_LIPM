@@ -18,34 +18,33 @@
 % e3 = 0.05; % e3 [m]
 % e4 = 0.040; % e4 [m]
 
+% optimized values from 2018_5_22_2_46_32.596.mat
+q1 = 1.7453;
+q2 = 2.7925;
+R1 = 0.0711;
+R2 = 0.3492;
+R3 = 0.1347;
+Rc1 = 0.0711;
+Rc2 = 0.2080;
+Rc3 = 0.2602;
+e1 = 0.0700;
+e2 = 0.1000;
+e3 = 0.0300;
+e4 = 0.0500;
+
 % these are the exact solutions from the solver for the above dims
-x0(1) = 56.2106;    % alpha1
-x0(2) = 107.6062;   % alpha2
-x0(3) = 86.1832;    % alpha3
-x0(4) = 68.4871;    % alpha4
-x0(5) = 106.5198;   % alpha5
-x0(6) = 77.3869;    % alpha6
+x0(1) = 108.924;
+x0(2) = 119.1635;
+x0(3) = 31.9093;
+x0(4) = 59.9225;
+x0(5) = 123.8391;
+x0(6) = 57.0749;
 x0 = x0.*pi/180;
 
 % load optimized params
 % load('optsols\kin\2018_5_22_1_50_41.1.mat');
 % load('optsols\kin\2018_5_22_2_33_12.727.mat');
-load('optsols\kin\2018_5_22_2_46_32.596.mat');
-
-
-q1 = x_sol(1);
-q2 = x_sol(2);
-R1 = x_sol(3);
-R2 = x_sol(4);
-R3 = x_sol(5);
-Rc1 = x_sol(6);
-Rc2 = x_sol(7);
-Rc3 = x_sol(8);
-e1 = x_sol(9);
-e2 = x_sol(10);
-e3 = x_sol(11);
-e4 = x_sol(12);
-
+% load('optsols\kin\2018_5_22_2_46_32.596.mat');
 
 
 % force "F" acts at point p9

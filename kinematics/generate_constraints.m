@@ -11,7 +11,8 @@ q = [q1,q2].';
 q_pr = [alpha1,alpha2,alpha3,alpha4,alpha5,alpha6].';
 
 % define transformation matrix
-T = inline('[1 0 0; x cos(q) -sin(q);0 sin(q) cos(q)]','x','q');
+% T = inline('[1 0 0; x cos(q) -sin(q);0 sin(q) cos(q)]','x','q');
+T = inline('[cos(q) -sin(q) 0 x;sin(q) cos(q) 0 0; 0 0 1 0; 0 0 0 1]','x','q');
 
 disp('generating constraints ...');
 
@@ -26,8 +27,8 @@ tmp = T10*T21*T32*T43*T04;
 T1 = simplify(tmp);
 
 % please look at T matrix to understand why I picked this const...
-f1 = [T1(2,1);... % x-position
-        T1(3,1);...  % y-position
+f1 = [T1(1,4);... % x-position
+        T1(2,4);...  % y-position
             alpha1 + alpha2 + alpha3 - q1 - q2];  % sum of angles in polygon
 
 % second loop in the leg mechanism
@@ -40,37 +41,37 @@ tmp = T53*T65*T76*T37;
 T2 = simplify(tmp);
 
 % please look at T matrix to understand why I picked this const...
-f2 = [T2(2,1);... % x-position
-        T2(3,1);...  % y-position
+f2 = [T2(1,4);... % x-position
+        T2(2,4);...  % y-position
             alpha2 + alpha4 + alpha5 + alpha6 - 2*pi];  % sum of angles in polygon
 
         
 disp('generating points ...');
-p1 = [1,0,0].';
+p1 = [0,0].';
 
 tmp = T10;
-p2 = simplify(tmp(2:3,1));
+p2 = simplify(tmp(1:2,4));
 
 tmp = T10*T21;
-p3 = simplify(tmp(2:3,1));
+p3 = simplify(tmp(1:2,4));
 
 tmp = T10*T21*T32;
-p4 = simplify(tmp(2:3,1));
+p4 = simplify(tmp(1:2,4));
 
 tmp = T10*T21*T32*T43;
-p5 = simplify(tmp(2:3,1));
+p5 = simplify(tmp(1:2,4));
 
 tmp = T10*T21*T32*T53;
-p6 = simplify(tmp(2:3,1));
+p6 = simplify(tmp(1:2,4));
 
 tmp = T10*T21*T32*T53*T65;
-p7 = simplify(tmp(2:3,1));
+p7 = simplify(tmp(1:2,4));
 
 tmp = T10*T21*T32*T53*T65*T76;
-p8 = simplify(tmp(2:3,1));
+p8 = simplify(tmp(1:2,4));
 
 tmp = T10*T21*T32*T53*T95;
-p9 = simplify(tmp(2:3,1));
+p9 = simplify(tmp(1:2,4));
 
 
 % v1 = [0,0].';
