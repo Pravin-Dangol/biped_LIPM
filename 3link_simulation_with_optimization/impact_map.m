@@ -46,20 +46,20 @@ E(2,4) = 0;
 E(2,5) = 1;
 
 %Impact map from pg56 (3.20)
-temp = [De -E';E zeros(2,2)]\[De*[x(4:6)';zeros(2,1)];zeros(2,1)]; %7x1
+Delta = [De -E';E zeros(2,2)]\[De*[x(4:6)';zeros(2,1)];zeros(2,1)]; %7x1
 
-R = [0, 1, 0;...
-    1, 0, 0;...
-    0, 0, 1]; 
+%Is this right? Check again
+R = [1, 1, 0;...
+    0, -1, 0;...
+    0, -1, 1]; 
 %q1 and q2 switch position after impact
-x_plus(1) = x(2);
-x_plus(2) = x(1);
-x_plus(3) = x(3);
-x_plus(4) = temp(2);
-x_plus(5) = temp(1);
-x_plus(6) = temp(3);
-x_plus(7) = temp(6);
-x_plus(8) = temp(7);
-f2 = temp(5);
+x_plus(1:3) = (R*x(1:3)')';
+x_plus(4:6) = (R*Delta(1:3))';
 
+%x_plus(1) = x(2);x_plus(2) = x(1);x_plus(3) = x(3);
+%x_plus(4) = temp(2);x_plus(5) = temp(1);x_plus(6) = temp(3);
+
+f2 = Delta(5);
+x_plus(7) = Delta(6);
+x_plus(8) = Delta(7);
 end

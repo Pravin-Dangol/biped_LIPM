@@ -1,7 +1,7 @@
 % Optimize intial conditions as ZD states and Bezier coeffs using fmincon
 
-z_minus = [0.2 2];         %[q1, dq1]
-J0 = 1000;                  %initial cost
+z_minus = [-0.26 3];         %[q1, dq1]
+J0 = 0;                  %initial cost
 %Bezier coefficients
 alpha = [0.2 1 0.26];  %for q2 - alpha 3 - 5
 gamma = [0.2 -1 1.2];  %for q3 - alpha 3 - 5
@@ -9,11 +9,16 @@ gamma = [0.2 -1 1.2];  %for q3 - alpha 3 - 5
 y0 = [z_minus, alpha, gamma, J0];   %parameters that need to be optimized
 
 %boundary constraints starting from [q1 q1_dot, alpha q2, alpha q3, J]
-lb = [-deg2rad(15), -100, -inf*ones(1,6), 0];
-ub = [deg2rad(15), 100, inf*ones(1,7)];
 
-%using only bounds and nonlinear contraints w/ default algorithm
-[f, J] = fmincon(@(y)cost_ZD(y),y0,[],[],[],[],lb,ub,@confuneq);
+%%%Problem - s is not within (0,1) becuase:
+%after impact q1+ = -q1+q2, q2 in not bounded
+
+lb = [-deg2rad(15), -100, -inf, -inf, -inf, -inf, -inf, -inf, 0];
+ub = [deg2rad(15), 100, inf, inf, inf, inf, inf, inf, inf,];
+
+%using only bounds and nonlinear contraints
+opts = optimoptions('fmincon','Algorithm','interior-point');
+[f, J] = fmincon(@(y)cost_ZD(y),y0,[],[],[],[],lb,ub,@confuneq,opts);
 
 function [c,ceq] = confuneq(y)
 
@@ -126,7 +131,8 @@ end
         a31 = a(6); a32 = a(7); a33 = a(8); a34 = a(9); a35 = a(10);
         a_3 = a(6:10);
         
-        q1 = z(1); dq1 = z(2);
+        q1 = z(1);
+        dq1 = z(2);
         
         D1 = D(1, 1);
         D2 = D(1, 2:3);
@@ -138,6 +144,7 @@ end
         
         delq = deg2rad(30);              %difference between min and max q1
         s = (q1 + delq/2)/delq;   %normalized general coordinate
+        s = sat_s01(s);
         
         % d/ds(db/ds*s_dot)
         dLsb2 = -dq1/delq*(3*s^2*(4*a24 - 4*a25) - s^2*(12*a23 - 12*a24) - 3*(s - 1)^2*(4*a21 - 4*a22) +...
@@ -150,7 +157,8 @@ end
         beta1 = [dLsb2; dLsb3]*dq1/delq;
         
         % beta2 =  db/ds*s_dot
-        db_ds2 = d_ds_bezier(s,4,a_2); db_ds3 = d_ds_bezier(s,4,a_3);
+        db_ds2 = d_ds_bezier(s,4,a_2);
+        db_ds3 = d_ds_bezier(s,4,a_3);
         
         beta2 = [db_ds2; db_ds3];
         
@@ -160,6 +168,7 @@ end
         
         dz(1) = z(2);
         dz(2) = (D1 + D2*beta2/delq)\(-D2*beta1 - H1);
+        
         %dz(2) = -G(1,1);           %Alternative way to compute ZD state
         %from pg 121/pg 159, fails  - returns Converged to an infeasible point
         
