@@ -1,9 +1,9 @@
 %Simulation of a single step of ZD to compare with full dynamics
 function Test_ZD()
 
-delq = deg2rad(30); z_plus = 0; M = 4;
+delq = deg2rad(60); z_plus = 0; M = 4;
 
-f = [-0.26 3 0 0.40 0.5 2.6 2.50 2.6];
+f = [0.26 -3 0 0.40 0.5 2.6 2.50 2.6];
 
 alpha = [-f(5), -f(4), 0, f(4:5)];      %-2*f(5)+f(4)?
 gamma = [f(8), 2*f(8)-f(7), f(8), f(7:8)];
@@ -22,7 +22,7 @@ dq3_minus = M*(gamma(5)-gamma(4))*z_minus(2)/delq;
 x_minus = [z_minus(1), q2_minus, q3_minus, z_minus(2), dq2_minus, dq3_minus];
 
 x_plus = impact_map(x_minus);
-x_plus = x_plus(1:6)';
+x_plus = x_plus(1:6);
 
 z_plus = [x_plus(1), x_plus(4)];
 
@@ -44,9 +44,10 @@ for i = 1:1
     options = odeset(options,'InitialStep',t(nt)-t(nt-refine),'MaxStep',t(nt)-t(1));
     tstart = t(nt);
     
-    x_minus = map_z_to_x(z(nt,:),a);
-    x_plus = impact_map(x_minus);
-    z_plus = [x_plus(1), x_plus(4)];
+    x_minus(i+1,:) = map_z_to_x(z(nt,:),a);
+    temp_x = impact_map(x_minus(i+1,:)); 
+    x_plus(i+1,:) = temp_x(1:6);
+    z_plus = [x_plus(i+1,1), x_plus(i+1,4)];
     
     temp = zeros(1,6);
     for j = 2:nt
@@ -57,14 +58,18 @@ for i = 1:1
        
 end
 
-%{
+%
 %Plots impact and states
 figure(1)
 plot(states(:,1),states(:,2),'-.')
 hold on
-plot(z_plus(1),z_plus(2),'x')
 plot(z_minus(1),z_minus(2),'ro')
+plot(z_plus(1),z_plus(2),'+')
+%plot(z_minus(1:end-1,1),z_minus(1:end-1,2),'ro')
+%plot(z_plus(1:end-1,1),z_plus(1:end-1,2),'+')
 hold off
+legend('swing phase','pre impact','post impact','Interpreter','latex')
+xlabel('q_1'); ylabel('$\dot{q_1}$','Interpreter','latex')
 %}
 
 %
@@ -72,11 +77,11 @@ hold off
 figure(2)
 subplot(2,1,1)
 plot(time_out,states_full(:,1),time_out,states_full(:,2),'-.',time_out,states_full(:,3),'--')
-legend('\theta_1','\theta_2','\theta_3')
+legend('q_1','q_2','q_3')
 title('Joint angles')
 subplot(2,1,2)
 plot(time_out,states_full(:,4),time_out,states_full(:,5),'-.',time_out,states_full(:,6),'--')
-legend('$\dot{\theta_1}$','$\dot{\theta_2}$','$\dot{\theta_3}$','Interpreter','latex')
+legend('$\dot{q_1}$','$\dot{q_2}$','$\dot{q_3}$','Interpreter','latex')
 title('Joint velocities')
 %}
 
@@ -88,11 +93,11 @@ title('Joint velocities')
         q1 = z(1);
         %x = map_z_to_x(z,a);
         %q2 = x(2);
-        s = (z_plus(1)- q1)/delq;   %normalized general coordinate
+        s = (z_plus(1) - q1)/delq;   %normalized general coordinate
         
         limits(1) = s-1; 	%check when stance leg reaches desired angle
-        %limits(2) = r*sin(z(1)) - 0.1*r;    %check if leg is close to ground
-        isterminal = 1;                     % Halt integation
+        limits(2) = s;    %check if leg is close to ground
+        isterminal = [1 1];                     % Halt integation
         direction = [];                      %The zero can be approached from either direction
         
     end
@@ -142,14 +147,14 @@ title('Joint velocities')
 
     function q = map_z_to_x(z,a)
         
-        q1 = z(1)
+        q1 = z(1);
         dq1 = z(2);
         a2 = a(1:5); a3 = a(6:end);
         
         M = 4;
         
         %delq = deg2rad(30);              %difference between min and max q1
-        s = (z_plus(1) - q1)/delq   %normalized general coordinate
+        s = (z_plus(1) - q1)/delq;   %normalized general coordinate
         
         q2 = bezier(s,M,a2);
         q3 = bezier(s,M,a3)';
