@@ -36,9 +36,9 @@ p_e = [p_h; p_v];
 
 %Position of masses, relative to q1
 p_Mh = r*[sin(-q1); cos(-q1)] + p_e;
-p_Mt = p_Mh + l*[sin(-q1 + q3); cos(-q1 + q3)];
+p_Mt = p_Mh + l*[sin(-q1 + pi - q3); cos(-q1 + pi - q3)];
 p_m1 = r/2*[sin(-q1); cos(-q1)] + p_e;
-p_m2 = p_Mh + r/2*[sin(-q1 + q2); cos(-q1 + q2)];
+p_m2 = p_Mh + r/2*[sin(q1 + q2); -cos(q1 + q2)];
 
 dp_Mh = jacobian(p_Mh,q)*dq;
 dp_Mt = jacobian(p_Mt,q)*dq;
@@ -108,7 +108,7 @@ K = K_m1 + K_Mh + K_Mt + K_m2;
 
 De = jacobian(jacobian(K,dqe).',dqe); De = simplify(De);
 
-P2 = p_e + [r*sin(q1) + r*sin(-q1+q2); r*cos(q1) + r*cos(-q1+q2)];
+P2 = p_e + [r*sin(q1) + r*sin(q1+q2); r*cos(q1) - r*cos(q1+q2)];
 
 E = jacobian(P2,qe);
 
