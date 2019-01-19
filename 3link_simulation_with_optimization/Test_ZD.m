@@ -1,14 +1,16 @@
 %Simulation of a single step of ZD to compare with full dynamics
-
-f = [0.1773    2.4665   -1.5124    1.2887    1.5019    0.4561   -2.9580    1.6317  999.9990];
+function Test_ZD()
+f = [-0.1773    -2.4665   -1.5124    1.2887    1.5019    0.4561   -2.9580    1.6317  999.9990];
 M = 4;
 alpha2 = [f(5), 2*f(5)-f(4), f(3:5)];
 alpha3 = [f(8), 2*f(8)-f(7), f(6:8)];
 
-global a
+% global a
 a = [alpha2, alpha3];
 
 x0 = map_z_to_x([f(1), f(2)],a);   %I.C. [thetas; velocities]
+
+z_minus = [f(1),f(2)];
 
 x_plus = impact_map(x0);
 x_plus = x_plus(1:6)';
@@ -44,9 +46,8 @@ title('Joint velocities')
 
 %Event function
 function [limits,isterminal,direction] = events(~,z)
-global a
 [r,~,~,~,~,~] = model_params_3link;
-q1d = control_params_3link;
+% q1d = control_params_3link;
 
 q1 = z(1);
 x = map_z_to_x(z,a);
@@ -75,9 +76,10 @@ D2 = D(1, 2:3); %D3 = D(2:3, 1); %D4 = D(2:3, 2:3);
 
 H1 = C(1,1)*dq1 + G(1,1); %H2 = C(2:3,2:3)*x(5:6)' + [G(2,1); G(3,1)];
 
-delq = deg2rad(30);              %difference between min and max q1
-s = (q1 + delq/2)/delq;   %normalized general coordinate
-
+% delq = deg2rad(30);    %difference between min and max q1
+delq=(z_plus(1)-z_minus(1));
+s = (z_plus(1)-q1 )/delq;   %normalized general coordinate
+s
 dLsb2 = -dq1/delq*(3*s^2*(4*a24 - 4*a25) - s^2*(12*a23 - 12*a24) - 3*(s - 1)^2*(4*a21 - 4*a22) +...
     (s - 1)^2*(12*a22 - 12*a23) - 2*s*(s - 1)*(12*a23 - 12*a24) + s*(2*s - 2)*(12*a22 - 12*a23));
 
@@ -99,4 +101,5 @@ dz(2) = (D1 + D2*beta2)\(-D2*beta1 - H1);
 
 dz = [dz(1), dz(2)]';
 
+end
 end
