@@ -49,9 +49,9 @@ E(2,5) = 1;
 Delta = [De -E';E zeros(2,2)]\[De*[x(4:6)';zeros(2,1)];zeros(2,1)]; %7x1
 
 %Is this right? Check again
-R = [1, -1, 0;...
+R = [1, 1, 0;...
     0, -1, 0;...
-    0, 0, 1]; 
+    0, -1, 1]; %R*R
 %q1 and q2 switch position after impact
 x_plus(1:3) = (R*x(1:3)')';
 x_plus(4:6) = (R*Delta(1:3))';
