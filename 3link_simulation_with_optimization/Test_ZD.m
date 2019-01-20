@@ -1,20 +1,20 @@
 %Simulation of a single step of ZD to compare with full dynamics
 function Test_ZD()
 
-delq = deg2rad(60); z_plus = 0; M = 4;
+delq = deg2rad(30); z_plus = 0; M = 4;
 
-f = [0.26 -3 0 0.40 0.5 2.6 2.50 2.6];
+f = [-0.2618 -2 0 0.20 0.5236 2.0944 2.50 2.618];
 
-alpha = [-f(5), -f(4), 0, f(4:5)];      %-2*f(5)+f(4)?
-gamma = [f(8), 2*f(8)-f(7), f(8), f(7:8)];
+alpha = [-f(5), -f(4), f(3:5)];      %-2*f(5)+f(4)?
+gamma = [f(8)-f(6)/2, 2*f(8)-f(6)/2-f(7), f(6:8)];
 
 a = [alpha, gamma];
 
 z_minus = [f(1),f(2)];
 
 %Mapping from z to x on boundary pg 140, 141
-q2_minus = -alpha(5);            %q2- = alpha(0) = -alpha(M) (gaits for q2 reversed)
-q3_minus = gamma(5);            %q3- = gamma(0) = gamma(M) (gaits for q2 near constant)
+q2_minus = alpha(5);            %q2- = alpha(M)
+q3_minus = gamma(5);            %q3- = gamma(M)
 %d_dot- = M*(alpha(M) - alpha(M-1))*theta_dot-/(delta_theta)
 dq2_minus = M*(alpha(5)-alpha(4))*z_minus(2)/delq;
 dq3_minus = M*(gamma(5)-gamma(4))*z_minus(2)/delq;
@@ -28,26 +28,26 @@ z_plus = [x_plus(1), x_plus(4)];
 
 delq = z_plus(1) - z_minus(1);
 
-tstart = 0; tfinal = 50;                    %max time per swing
-time_out = tstart; states = z_plus;
+tstart = 0; tfinal = 510;                    %max time per swing
+time_out = tstart; states = z_plus; 
+
+impact_ = [z_minus; z_plus]; 
 states_full = map_z_to_x(z_plus,a);
 
 refine = 4; options = odeset('Events',@events,'Refine',refine);
 
-for i = 1:1
-    [t,z] = ode45(@(t,z) ZD_states(t,z,a), [tstart tfinal], z_plus, options);
-    
-    
+for i = 1:35    [t,z] = ode45(@(t,z) ZD_states(t,z,a), [tstart tfinal], z_plus, options);
+        
     nt = length(t); time_out = [time_out; t(2:nt)];
-    states = [states;z(2:nt,:)];
+    states = [states;z(1:nt,:)];
     
     options = odeset(options,'InitialStep',t(nt)-t(nt-refine),'MaxStep',t(nt)-t(1));
     tstart = t(nt);
     
-    x_minus(i+1,:) = map_z_to_x(z(nt,:),a);
+    x_minus = [x_minus; map_z_to_x(z(nt,:),a)];
     temp_x = impact_map(x_minus(i+1,:)); 
-    x_plus(i+1,:) = temp_x(1:6);
-    z_plus = [x_plus(i+1,1), x_plus(i+1,4)];
+    x_plus = [x_plus; temp_x(1:6)];
+    z_plus = [x_plus(end,1), x_plus(end,4)];
     
     temp = zeros(1,6);
     for j = 2:nt
@@ -55,20 +55,26 @@ for i = 1:1
     end
     
     states_full = [states_full;temp];
-       
+         
+end
+
+[m,~] = size(x_minus);
+for j = 2:m
+    impact_ = [impact_; x_minus(j,1), x_minus(j,4); x_plus(j,1), x_plus(j,4)];
 end
 
 %
 %Plots impact and states
 figure(1)
-plot(states(:,1),states(:,2),'-.')
+plot(states(:,1),states(:,2),'b-.')
 hold on
-plot(z_minus(1),z_minus(2),'ro')
-plot(z_plus(1),z_plus(2),'+')
-%plot(z_minus(1:end-1,1),z_minus(1:end-1,2),'ro')
-%plot(z_plus(1:end-1,1),z_plus(1:end-1,2),'+')
+[m,~] = size(impact_); count = 1;
+for k = 1:m-2
+    plot(impact_(count:count+1,1),impact_(count:count+1,2),'rx-')
+    count =  k+2;
+end
 hold off
-legend('swing phase','pre impact','post impact','Interpreter','latex')
+legend('swing phase','impact','location','best','Interpreter','latex')
 xlabel('q_1'); ylabel('$\dot{q_1}$','Interpreter','latex')
 %}
 
@@ -87,18 +93,14 @@ title('Joint velocities')
 
 %Event function
     function [limits,isterminal,direction] = events(~,z)
-        %[r,~,~,~,~,~] = model_params_3link;
-        % q1d = control_params_3link;
         
         q1 = z(1);
-        %x = map_z_to_x(z,a);
-        %q2 = x(2);
         s = (z_plus(1) - q1)/delq;   %normalized general coordinate
         
-        limits(1) = s-1; 	%check when stance leg reaches desired angle
-        limits(2) = s;    %check if leg is close to ground
-        isterminal = [1 1];                     % Halt integation
-        direction = [];                      %The zero can be approached from either direction
+        limits(1) = s-1; 	%check when gait is at the end
+        limits(2) = s;      %check if gait rolls back to 0
+        isterminal = [1 1];    	% Halt integation
+        direction = [];       	%The zero can be approached from either direction
         
     end
 
@@ -153,7 +155,6 @@ title('Joint velocities')
         
         M = 4;
         
-        %delq = deg2rad(30);              %difference between min and max q1
         s = (z_plus(1) - q1)/delq;   %normalized general coordinate
         
         q2 = bezier(s,M,a2);
