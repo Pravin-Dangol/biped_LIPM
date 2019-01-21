@@ -1,6 +1,6 @@
 % Optimize intial conditions as ZD states and Bezier coeffs using fmincon
 function [f,J] = func_optim_param()
-z_minus = [-0.2618 -1.2];         %[q1, dq1]
+z_minus = [-0.2618 -2];         %[q1, dq1]
 %J = 0;                  %initial cost
 z_sol = [];
 delq = deg2rad(30);
@@ -11,9 +11,13 @@ gamma = [2.0944 2.50 2.618];        %for q3 - alpha 3 - 5
 y0 = [z_minus, alpha, gamma];   %parameters that need to be optimized
 
 %boundary constraints starting from [q1 q1_dot, alpha q2, alpha q3]
-eps=3;
-lb = [z_minus(1), z_minus(2)-2, alpha(1)-eps, alpha(2)-eps, alpha(3)-0.1*eps, gamma(1)-eps, gamma(2)-eps, gamma(3)-0.1*eps];
-ub = [z_minus(1)*0, z_minus(2)+2, alpha(1)+eps, alpha(2)+eps, alpha(3)+0.1*eps, gamma(1)+eps, gamma(2)+eps, gamma(3)-0.1*eps];
+eps = 0.25;
+lb = [max(-deg2rad(30),z_minus(1)-eps), max(-10,z_minus(2)-3),...
+    alpha(1)-eps, max(0,alpha(2)-eps), max(0,alpha(3)-eps),...
+    max(0,gamma(1)-eps), max(0,gamma(2)-eps), max(0,gamma(3)-eps)];
+ub = [0, -1,...
+    alpha(1)+eps, min(deg2rad(45),alpha(2)+eps), min(deg2rad(45),alpha(3)+eps),...
+    min(pi,gamma(1)+eps), min(pi,gamma(2)+eps), min(pi,gamma(3)+eps)];
 
 %using only bounds and nonlinear contraints
 opts = optimoptions('fmincon','Algorithm','interior-point');
@@ -41,7 +45,7 @@ opts = optimoptions('fmincon','Algorithm','interior-point');
         gamma = y(6:8);         %alpha 3 - 5 for q3
         
         M = 4;
-        delq = deg2rad(30);              %difference between min and max q1
+        delq = 2*abs(z_minus(1));              %difference between min and max q1
         %Mapping from z to x on boundary pg 140, 141
         q2_minus = alpha(3);            %q- = alpha(M) (end of gait)
         q3_minus = gamma(3);
@@ -59,11 +63,11 @@ opts = optimoptions('fmincon','Algorithm','interior-point');
         
         % Need the other bezier coefficients now
         
-        a0 = -alpha(3); g0 = gamma(3)-gamma(1)/2;       %alpha(0) = alpha(M) (desired)
+        a0 = -alpha(3); g0 = -gamma(3)+2*gamma(1);   %a(0) = -a(5); g(0) = -g(4)+2*g(2)
         %Enforcing slope for the 1st 2 coefficients to be equal to qb_dot:
         %M*(alpha(1) - alpha(0))*theta_dot-/(delta_theta) = qb_dot, so:
-        a1 = -alpha(2);   %dq2*delq/(M*z_plus(2)) + a0;
-        g1 = 2*gamma(3)-gamma(1)/2-gamma(2);   %dq3*delq/(M*z_plus(2)) + g0;
+        a1 = -alpha(2);   % -a5;
+        g1 = -gamma(3)+2*gamma(1);   % g(1)-g(0) = g(4)-g(3);
         
         a = [a0, a1, alpha, g0, g1, gamma];
         
@@ -99,21 +103,21 @@ end
         %
         %Event function
         function [limits,isterminal,direction] = events(~,z)
-        
-        q1 = z(1);
-        s = (z_plus(1) - q1)/delq;   %normalized general coordinate
-        
-        limits(1) = s-1; 	%check when gait is at the end
-        limits(2) = s;      %check if gait rolls back to 0
-        isterminal = [1 1];    	% Halt integation
-        direction = [];       	%The zero can be approached from either direction
-        
+            
+            q1 = z(1);
+            s = (z_plus(1) - q1)/delq;   %normalized general coordinate
+            
+            limits(1) = s-1; 	%check when gait is at the end
+            limits(2) = s;      %check if gait rolls back to 0
+            isterminal = [1 1];    	% Halt integation
+            direction = [];       	%The zero can be approached from either direction
+            
         end
         
         %Zero Dynamics
         function dz = ZD_states(~,z,a)
             
-            x = map_z_to_x_sub(z,a);
+            x = map_z_to_x(z,a);
             [D,C,G,B] = state_matrix(x);        %Get state matrix using full states x
             
             % Bezier coefficients for q2
@@ -134,9 +138,9 @@ end
             H1 = C(1,1)*dq1 + G(1,1);
             H2 = C(2:3,2:3)*x(5:6)' + [G(2,1); G(3,1)];
             
-            %q1
+            %dq1,q1
             s = (z_plus(1)-q1)/delq;   %normalized general coordinate
-            
+            %x(2),s
             % d/ds(db/ds*s_dot)
             dLsb2 = -dq1/delq*(3*s^2*(4*a24 - 4*a25) - s^2*(12*a23 - 12*a24) - 3*(s - 1)^2*(4*a21 - 4*a22) +...
                 (s - 1)^2*(12*a22 - 12*a23) - 2*s*(s - 1)*(12*a23 - 12*a24) + s*(2*s - 2)*(12*a22 - 12*a23));
@@ -151,14 +155,14 @@ end
             db_ds2 = d_ds_bezier(s,4,a_2);
             db_ds3 = d_ds_bezier(s,4,a_3);
             
-            beta2 = [db_ds2; db_ds3];
+            beta2 = [db_ds2; db_ds3]/delq;
             
-            ddq1 = (D1 + D2*beta2/delq)\(-D2*beta1 - H1);
+            ddq1 = (D1 + D2*beta2)\(-D2*beta1 - H1);
             
-            u = B(2:3,1:2)\((D3 + D4*beta2/delq)*ddq1 + (D4*beta1 + H2));
+            u = B(2:3,1:2)\((D3 + D4*beta2)*ddq1 + (D4*beta1 + H2));
             
             dz(1) = z(2);
-            dz(2) = (D1 + D2*beta2/delq)\(-D2*beta1 - H1);
+            dz(2) = (D1 + D2*beta2)\(-D2*beta1 - H1);
             
             %Setting the derivative of the cost function as a state, from pg155
             %dz(3) = norm(u);
@@ -168,25 +172,25 @@ end
         end
         %}
         
-        function q = map_z_to_x_sub(z,a)
-        
-        q1 = z(1);
-        dq1 = z(2);
-        a2 = a(1:5); a3 = a(6:end);
-        
-        M = 4;
-        
-        s = (z_plus(1) - q1)/delq;   %normalized general coordinate
-        
-        q2 = bezier(s,M,a2);
-        q3 = bezier(s,M,a3)';
-        
-        dq2 = d_ds_bezier(s,M,a2)*dq1/delq;
-        dq3 = d_ds_bezier(s,M,a3)*dq1/delq;
-        
-        q = [z(1), q2, q3, z(2), dq2, dq3];
-        
-        end      
+        function q = map_z_to_x(z,a)
+            
+            q1 = z(1);
+            dq1 = z(2);
+            a2 = a(1:5); a3 = a(6:end);
+            
+            M = 4;
+            
+            s = (z_plus(1) - q1)/delq;   %normalized general coordinate
+            
+            q2 = bezier(s,M,a2);
+            q3 = bezier(s,M,a3)';
+            
+            dq2 = d_ds_bezier(s,M,a2)*dq1/delq;
+            dq3 = d_ds_bezier(s,M,a3)*dq1/delq;
+            
+            q = [z(1), q2, q3, z(2), dq2, dq3];
+            
+        end
         
     end
 

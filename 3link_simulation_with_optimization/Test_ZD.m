@@ -4,9 +4,10 @@ function Test_ZD()
 delq = deg2rad(30); z_plus = 0; M = 4;
 
 f = [-0.2618 -2 0 0.20 0.5236 2.0944 2.50 2.618];
+f = [-0.4821   -1.0029    0.1918    0.3672    0.6869  2.3175    2.2645    2.8316];
 
 alpha = [-f(5), -f(4), f(3:5)];      %-2*f(5)+f(4)?
-gamma = [f(8)-f(6)/2, 2*f(8)-f(6)/2-f(7), f(6:8)];
+gamma = [-f(8)+2*f(6), -f(7)+2*f(6), f(6:8)];
 
 a = [alpha, gamma];
 
@@ -28,7 +29,7 @@ z_plus = [x_plus(1), x_plus(4)];
 
 delq = z_plus(1) - z_minus(1);
 
-tstart = 0; tfinal = 510;                    %max time per swing
+tstart = 0; tfinal = 50;                    %max time per swing
 time_out = tstart; states = z_plus; 
 
 impact_ = [z_minus; z_plus]; 
@@ -36,7 +37,9 @@ states_full = map_z_to_x(z_plus,a);
 
 refine = 4; options = odeset('Events',@events,'Refine',refine);
 
-for i = 1:35    [t,z] = ode45(@(t,z) ZD_states(t,z,a), [tstart tfinal], z_plus, options);
+for i = 1:35    
+    
+    [t,z] = ode45(@(t,z) ZD_states(t,z,a), [tstart tfinal], z_plus, options);
         
     nt = length(t); time_out = [time_out; t(2:nt)];
     states = [states;z(1:nt,:)];
@@ -45,7 +48,7 @@ for i = 1:35    [t,z] = ode45(@(t,z) ZD_states(t,z,a), [tstart tfinal], z_plus, 
     tstart = t(nt);
     
     x_minus = [x_minus; map_z_to_x(z(nt,:),a)];
-    temp_x = impact_map(x_minus(i+1,:)); 
+    temp_x = impact_map(x_minus(end,:)); 
     x_plus = [x_plus; temp_x(1:6)];
     z_plus = [x_plus(end,1), x_plus(end,4)];
     
@@ -120,10 +123,8 @@ title('Joint velocities')
         
         H1 = C(1,1)*dq1 + G(1,1); %H2 = C(2:3,2:3)*x(5:6)' + [G(2,1); G(3,1)];
         
-        % delq = deg2rad(30);    %difference between min and max q1
-        
         s = (z_plus(1)- q1)/delq;   %normalized general coordinate
-        %s
+
         dLsb2 = -dq1/delq*(3*s^2*(4*a24 - 4*a25) - s^2*(12*a23 - 12*a24) - 3*(s - 1)^2*(4*a21 - 4*a22) +...
             (s - 1)^2*(12*a22 - 12*a23) - 2*s*(s - 1)*(12*a23 - 12*a24) + s*(2*s - 2)*(12*a22 - 12*a23));
         
@@ -131,9 +132,6 @@ title('Joint velocities')
             (s - 1)^2*(12*a32 - 12*a33) - 2*s*(s - 1)*(12*a33 - 12*a34) + s*(2*s - 2)*(12*a32 - 12*a33));
         
         beta1 = [dLsb2; dLsb3]*dq1/delq;
-        
-        %beta1 = [(6250000*dq1^2*((7500*((2500*q1)/1309 - 3/2)^2*(4*a21 - 4*a22))/1309 - (7500*((2500*q1)/1309 - 1/2)^2*(4*a24 - 4*a25))/1309 + (2500*((2500*q1)/1309 - 1/2)^2*(12*a23 - 12*a24))/1309 - (2500*((2500*q1)/1309 - 3/2)^2*(12*a22 - 12*a23))/1309 + ((2500*q1)/1309 - 3/2)*((12500000*q1)/1713481 - 2500/1309)*(12*a23 - 12*a24) - ((2500*q1)/1309 - 1/2)*((12500000*q1)/1713481 - 7500/1309)*(12*a22 - 12*a23)))/1713481;...
-        %    (6250000*dq1^2*((7500*((2500*q1)/1309 - 3/2)^2*(4*a21 - 4*a22))/1309 - (7500*((2500*q1)/1309 - 1/2)^2*(4*a24 - 4*a25))/1309 + (2500*((2500*q1)/1309 - 1/2)^2*(12*a23 - 12*a24))/1309 - (2500*((2500*q1)/1309 - 3/2)^2*(12*a22 - 12*a23))/1309 + ((2500*q1)/1309 - 3/2)*((12500000*q1)/1713481 - 2500/1309)*(12*a23 - 12*a24) - ((2500*q1)/1309 - 1/2)*((12500000*q1)/1713481 - 7500/1309)*(12*a22 - 12*a23)))/1713481];
         
         db_ds2 = d_ds_bezier(s,4,a_2); db_ds3 = d_ds_bezier(s,4,a_3);
         

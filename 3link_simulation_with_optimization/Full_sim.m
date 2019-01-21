@@ -1,7 +1,8 @@
 %Simulates full hybrid dynamics with parametrized output function
 function Full_sim()
 %Output of fmincon [q1, q1_dot, alpha,J]
-f = [-0.2618 -2 0 0.20 0.5236 2.0944 2.50 2.618];
+f = [-0.2618 -4 0 0.20 0.5236 2.0944 2.50 2.618];
+f = [-0.4821   -1.0029    0.1918    0.3672    0.6869  2.3175    2.2645    2.8316];
 M = 4; delq = deg2rad(30); %z_plus = 0;
 
 z_minus = f(1:2);
@@ -14,18 +15,19 @@ gamma = f(6:8);         %alpha 3 - 5 for q3
 q2_minus = alpha(3);            %q- = alpha(M) (end of gait)
 q3_minus = gamma(3);
 
-a0 = -alpha(3); g0 = gamma(3)-gamma(1)/2;
+a0 = alpha(3); g0 = gamma(3)-gamma(1)/2;
 
 %qb_dot = db/ds*s_dot = M*(alpha(4) - alpha(3))*theta_dot-/(delta_theta)
 dq2_minus = M*(alpha(3) - alpha(2))*z_minus(2)/delq;
 dq3_minus = M*(gamma(3) - gamma(2))*z_minus(2)/delq;
+
 %Enforcing slope for the 1st 2 coefficients to be equal to qb_dot:
 %M*(alpha(1) - alpha(0))*theta_dot-/(delta_theta) = qb_dot, so:
 a1 = dq2_minus*delq/(M*z_minus(2)) + a0;
 g1 = dq3_minus*delq/(M*z_minus(2)) + g0;
 
 alpha = [-f(5), -f(4), f(3:5)];
-gamma = [f(8)-f(6)/2, 2*f(8)-f(6)/2-f(7), f(6:8)];
+gamma = [-f(8)+2*f(6), -f(7)+2*f(6), f(6:8)];
 
 a = [alpha, gamma];
 
@@ -39,7 +41,6 @@ x_plus = x_plus(1:6)';
 %z_plus = [x_plus(1), x_plus(4)];
 delq = x_plus(1) - x_minus(1);
 
-
 tstart = 0; tfinal = 50;                    %max time per swing
 
 refine = 4; options = odeset('Events',@events,'Refine',refine);    %'OutputFcn',@odeplot,'OutputSel',1,
@@ -47,13 +48,13 @@ refine = 4; options = odeset('Events',@events,'Refine',refine);    %'OutputFcn',
 time_out = tstart; states = x_plus.'; foot = [];
 
 %Simlulation
-for i = 1:30                 %max number of steps allowed (depends on tfinal)
+for i = 1:35                 %max number of steps allowed (depends on tfinal)
     %Solve until the first terminal event.
     [t,x] = ode45(@(t,x) dx_vector_field(t,x,a), [tstart tfinal], x_plus, options);
     nt = length(t);
     
     %Setting the new initial conditions based on impact map
-    [x_plus,~] = impact_map(x(nt,:));
+    [x_plus,~] = impact_map(x(end,:));
     
     x_plus = x_plus(1:6);       % Only positions and velocities needed as initial conditions
     
