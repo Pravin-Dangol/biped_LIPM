@@ -11,7 +11,7 @@ gamma = [2.0944 2.50 2.618];        %for q3 - alpha 3 - 5
 y0 = [z_minus, alpha, gamma];   %parameters that need to be optimized
 
 %boundary constraints starting from [q1 q1_dot, alpha q2, alpha q3]
-eps = 0.25;
+eps = 0.5;
 lb = [max(-deg2rad(30),z_minus(1)-eps), max(-10,z_minus(2)-3),...
     alpha(1)-eps, max(0,alpha(2)-eps), max(0,alpha(3)-eps),...
     max(0,gamma(1)-eps), max(0,gamma(2)-eps), max(0,gamma(3)-eps)];

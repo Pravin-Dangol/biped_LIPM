@@ -115,12 +115,11 @@ E = jacobian(P2,qe);
 
 %% Bezier poly
 %syms s ds delta_theta
-delq = 0.5236; q1_plus = delq/2;
-
-s = (q1 - q1_plus)/delq;
+%delq = 0.5236; q1_plus = delq/2;
+%s = (q1 - q1_plus)/delq;
 %ds = dq1/delq;
 
-syms a21 a22 a23 a24 a25
+syms a21 a22 a23 a24 a25 s
 syms a31 a32 a33 a34 a35
 
 a2 = [a21 a22 a23 a24 a25];
@@ -167,14 +166,14 @@ h = [q2 - b2; q3 - b3]; hd = [b2; b3];
 
 x = [q1, q2, q3, dq1, dq2, dq3]';
 
-dh_dx = jacobian(h,x);
+dh_dx = jacobian(h,[s;x(2:end)]);
 
 fx = D\(-C*x(4:6)-G); Fx = [x(4:6); fx];
 gx = D\B; Gx = [zeros(3,2); gx];
 
 Lfh = dh_dx*Fx;
 
-dLfh = jacobian(Lfh,x);
+dLfh = jacobian(Lfh,[s;x(2:end)]);
 
 L2fh = dLfh*Fx;
 

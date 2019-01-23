@@ -1,10 +1,9 @@
 %Simulation of a single step of ZD to compare with full dynamics
 function Test_ZD()
 
-delq = deg2rad(30); z_plus = 0; M = 4;
-
 f = [-0.2618 -2 0 0.20 0.5236 2.0944 2.50 2.618];
 f = [-0.4821   -1.0029    0.1918    0.3672    0.6869  2.3175    2.2645    2.8316];
+delq = 2*abs(deg2rad(15)); z_plus = 0; M = 4;
 
 alpha = [-f(5), -f(4), f(3:5)];      %-2*f(5)+f(4)?
 gamma = [-f(8)+2*f(6), -f(7)+2*f(6), f(6:8)];
@@ -36,8 +35,7 @@ impact_ = [z_minus; z_plus];
 states_full = map_z_to_x(z_plus,a);
 
 refine = 4; options = odeset('Events',@events,'Refine',refine);
-
-for i = 1:35    
+for i = 1:10    
     
     [t,z] = ode45(@(t,z) ZD_states(t,z,a), [tstart tfinal], z_plus, options);
         
