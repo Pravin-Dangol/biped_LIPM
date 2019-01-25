@@ -3,20 +3,20 @@ function [f,J] = func_optim_param()
 z_minus = [-0.2618 -2];         %[q1, dq1]
 %J = 0;                  %initial cost
 z_sol = [];
-delq = deg2rad(30);
+delq = 0; %-deg2rad(30);        %inital delq
 %Bezier coefficients
-alpha = [0 0.20 0.5236];            %for q2 - alpha 3 - 5
+alpha = [0 0.40 0.5236];            %for q2 - alpha 3 - 5
 gamma = [2.0944 2.50 2.618];        %for q3 - alpha 3 - 5
 
 y0 = [z_minus, alpha, gamma];   %parameters that need to be optimized
 
 %boundary constraints starting from [q1 q1_dot, alpha q2, alpha q3]
-eps = 0.5;
+eps = 0.4;
 lb = [max(-deg2rad(30),z_minus(1)-eps), max(-10,z_minus(2)-3),...
     alpha(1)-eps, max(0,alpha(2)-eps), max(0,alpha(3)-eps),...
     max(0,gamma(1)-eps), max(0,gamma(2)-eps), max(0,gamma(3)-eps)];
-ub = [0, -1,...
-    alpha(1)+eps, min(deg2rad(45),alpha(2)+eps), min(deg2rad(45),alpha(3)+eps),...
+ub = [0, 0,...
+    alpha(1)+eps, min(deg2rad(60),alpha(2)+eps), min(deg2rad(60),alpha(3)+eps),...
     min(pi,gamma(1)+eps), min(pi,gamma(2)+eps), min(pi,gamma(3)+eps)];
 
 %using only bounds and nonlinear contraints
@@ -40,18 +40,19 @@ opts = optimoptions('fmincon','Algorithm','interior-point');
         J = 0;
         
         z_minus = y(1:2);
-        %alpha is the Bezier coeffs for q2, gamma for q3
-        alpha = y(3:5);         %alpha 3 - 5 for q2
-        gamma = y(6:8);         %alpha 3 - 5 for q3
+        % Bezier coefficients
+        alpha = [-y(5), -y(4), y(3:5)];      
+        gamma = [-y(8)+2*y(6), -y(7)+2*y(6), y(6:8)];
+                
+        a = [alpha, gamma]; M = 4;
         
-        M = 4;
-        delq = 2*abs(z_minus(1));              %difference between min and max q1
+        delq0 = -2*abs(z_minus(1));              %intial guess for delq
         %Mapping from z to x on boundary pg 140, 141
-        q2_minus = alpha(3);            %q- = alpha(M) (end of gait)
-        q3_minus = gamma(3);
+        q2_minus = alpha(5);            %q- = alpha(M) (end of gait)
+        q3_minus = gamma(5);
         %d_dot- = M*(alpha(M) - alpha(M-1))*theta_dot-/(delta_theta)
-        dq2_minus = M*(alpha(3)-alpha(2))*z_minus(2)/delq;
-        dq3_minus = M*(gamma(3)-gamma(2))*z_minus(2)/delq;
+        dq2_minus = M*(alpha(5)-alpha(4))*z_minus(2)/delq0;
+        dq3_minus = M*(gamma(5)-gamma(4))*z_minus(2)/delq0;
         
         x_minus = [z_minus(1), q2_minus, q3_minus, z_minus(2), dq2_minus, dq3_minus];
         
@@ -61,18 +62,8 @@ opts = optimoptions('fmincon','Algorithm','interior-point');
         z_plus = [x_plus(1), x_plus(4)];
         dq2 = x_plus(5); dq3 =  x_plus(6);
         
-        % Need the other bezier coefficients now
-        
-        a0 = -alpha(3); g0 = -gamma(3)+2*gamma(1);   %a(0) = -a(5); g(0) = -g(4)+2*g(2)
-        %Enforcing slope for the 1st 2 coefficients to be equal to qb_dot:
-        %M*(alpha(1) - alpha(0))*theta_dot-/(delta_theta) = qb_dot, so:
-        a1 = -alpha(2);   % -a5;
-        g1 = -gamma(3)+2*gamma(1);   % g(1)-g(0) = g(4)-g(3);
-        
-        a = [a0, a1, alpha, g0, g1, gamma];
-        
-        % compute delq
-        delq = z_plus(1)-z_minus(1);
+        % compute new delq
+        delq = z_minus(1)-z_plus(1);
         
         tstart = 0; tfinal = 1;                    %max time per swing
         
@@ -103,12 +94,20 @@ end
         %
         %Event function
         function [limits,isterminal,direction] = events(~,z)
+            q1 = z(1); 
+            %x = map_z_to_x(z,a);
+            %q2 = x(2); [r,~,~,~,~,~] = model_params_3link;
+            %{
+            if (r*cos(q1) - r*cos(q1+q2)) <= 0 &&  q2 > 0
+                limits = 1
+            else 
+                limits = 0;
+            end
+            %}
+            s = (q1 - z_plus(1))/delq;   %normalized general coordinate
             
-            q1 = z(1);
-            s = (z_plus(1) - q1)/delq;   %normalized general coordinate
-            
-            limits(1) = s-1; 	%check when gait is at the end
-            limits(2) = s;      %check if gait rolls back to 0
+            limits(1) = s-1;
+            limits(2) = s;
             isterminal = [1 1];    	% Halt integation
             direction = [];       	%The zero can be approached from either direction
             
@@ -138,8 +137,7 @@ end
             H1 = C(1,1)*dq1 + G(1,1);
             H2 = C(2:3,2:3)*x(5:6)' + [G(2,1); G(3,1)];
             
-            %dq1,q1
-            s = (z_plus(1)-q1)/delq;   %normalized general coordinate
+            s = (q1 - z_plus(1))/delq;   %normalized general coordinate
             %x(2),s
             % d/ds(db/ds*s_dot)
             dLsb2 = -dq1/delq*(3*s^2*(4*a24 - 4*a25) - s^2*(12*a23 - 12*a24) - 3*(s - 1)^2*(4*a21 - 4*a22) +...
@@ -180,13 +178,13 @@ end
             
             M = 4;
             
-            s = (z_plus(1) - q1)/delq;   %normalized general coordinate
+            s = (q1 - z_plus(1))/delq;   %normalized general coordinate
             
             q2 = bezier(s,M,a2);
             q3 = bezier(s,M,a3)';
             
-            dq2 = d_ds_bezier(s,M,a2)*dq1/delq;
-            dq3 = d_ds_bezier(s,M,a3)*dq1/delq;
+            dq2 = d_ds_bezier(s,M,a2)*-dq1/delq;
+            dq3 = d_ds_bezier(s,M,a3)*-dq1/delq;
             
             q = [z(1), q2, q3, z(2), dq2, dq3];
             

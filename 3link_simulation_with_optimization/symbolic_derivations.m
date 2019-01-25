@@ -39,6 +39,7 @@ p_Mh = r*[sin(-q1); cos(-q1)] + p_e;
 p_Mt = p_Mh + l*[sin(-q1 + pi - q3); cos(-q1 + pi - q3)];
 p_m1 = r/2*[sin(-q1); cos(-q1)] + p_e;
 p_m2 = p_Mh + r/2*[sin(q1 + q2); -cos(q1 + q2)];
+P2 = p_Mh + r*[sin(q1 + q2); -cos(q1 + q2)];
 
 dp_Mh = jacobian(p_Mh,q)*dq;
 dp_Mt = jacobian(p_Mt,q)*dq;
@@ -108,18 +109,16 @@ K = K_m1 + K_Mh + K_Mt + K_m2;
 
 De = jacobian(jacobian(K,dqe).',dqe); De = simplify(De);
 
-P2 = p_e + [r*sin(q1) + r*sin(q1+q2); r*cos(q1) - r*cos(q1+q2)];
-
 E = jacobian(P2,qe);
 
 
 %% Bezier poly
-%syms s ds delta_theta
-%delq = 0.5236; q1_plus = delq/2;
-%s = (q1 - q1_plus)/delq;
-%ds = dq1/delq;
+syms s q1_plus delq
+%s = (q1 - q1_plus)/delq; 
+%delq = q1_minus - q1_plus (always -ve if q1 goes from +ve to -ve)
+%ds/dt = dq1/delq; ds/dq1 = 1/delq;
 
-syms a21 a22 a23 a24 a25 s
+syms a21 a22 a23 a24 a25 
 syms a31 a32 a33 a34 a35
 
 a2 = [a21 a22 a23 a24 a25];
@@ -145,17 +144,35 @@ for k = 0:M-1
     db_ds3 = db_ds3 + (a3(1,k+2)-a3(1,k+1))*(factorial(M)/(factorial(k)*factorial(M-k-1)))*s^k*(1-s)^(M-k-1);
 end
 
+%
+db_ds2 = jacobian(b2,q1);
+db_ds3 = jacobian(b3,q1);
+
+h = [q2 - b2; q3 - b3]; hd = [b2; b3];
+
+x = [q1, q2, q3, dq1, dq2, dq3]';
+
+dh_dx = jacobian(h,x);
+
+fx = D\(-C*x(4:6)-G); Fx = [x(4:6); fx];
+gx = D\B; Gx = [zeros(3,2); gx];
+
+Lfh = dh_dx*Fx;
+
+dLfh = jacobian(Lfh,x);
+%}
+%{
 %% For Zero Dynamics
 
-Lsb2 = jacobian(b2,q1)*dq1/delq; %ds_dt = dq1/delta_theta
+Lsb2 = jacobian(b2,s)*dq1/delq; %ds_dt = dq1/delta_theta
 
-Lsb3 = jacobian(b3,q1)*dq1/delq; %ds_dt = dq1/delta_theta
+Lsb3 = jacobian(b3,s)*dq1/delq; %ds_dt = dq1/delta_theta
 
 %jacbian is same as the sum, so using jacobian for 2nd partial
 
-dLsb2 = jacobian(db_ds2*dq1/delq,q1);
+dLsb2 = jacobian(db_ds2*dq1/delq,s);
 
-dLsb3 = jacobian(db_ds3*dq1/delq,q1);
+dLsb3 = jacobian(db_ds3*dq1/delq,s);
 
 beta1 = [dLsb2; dLsb2]*dq1/delq;
 
@@ -166,12 +183,14 @@ h = [q2 - b2; q3 - b3]; hd = [b2; b3];
 
 x = [q1, q2, q3, dq1, dq2, dq3]';
 
+ds_dt = dq1/delq; 
+
 dh_dx = jacobian(h,[s;x(2:end)]);
 
-fx = D\(-C*x(4:6)-G); Fx = [x(4:6); fx];
+fx = D\(-C*x(4:6)-G); Fx = [ds_dt; x(5:6); fx];
 gx = D\B; Gx = [zeros(3,2); gx];
 
-Lfh = dh_dx*Fx;
+Lfh = dh_dx*[ds_dt;x(5:6); fx];
 
 dLfh = jacobian(Lfh,[s;x(2:end)]);
 
@@ -179,9 +198,9 @@ L2fh = dLfh*Fx;
 
 LgLfh = dLfh*Gx;
 
-beta1 = jacobian(jacobian(hd,q1)*dq1/delq,q1)*dq1/delq;
+beta1 = jacobian(jacobian(hd,s)*(dq1/delq),s)*(dq1/delq);
 
-beta2 = jacobian(hd,q1)/delq;
+beta2 = [db_ds2; db_ds3]/(-delq);
 
 %u = LgLfh\L2fh;        %Takes a long time to compute, doesn't display well
 
@@ -189,4 +208,4 @@ beta2 = jacobian(hd,q1)/delq;
 ddq1 = (D(1,1)+D(1,2:3)*beta2)\(-D(1,2:3)*beta1-C(1,1)*dq1-G(1,1));
 
 dd_q1 = -G(1,1);
-
+%}

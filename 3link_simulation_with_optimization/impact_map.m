@@ -4,7 +4,7 @@ function [x_plus, f2] = impact_map(x)
 
 [r,m,Mh,Mt,l,~] = model_params_3link;
 
-q = num2cell(x(1:3)); [q1, q2, q3] = q{:};
+q1 = x(1); q2 = x(2); q3 = x(3);
 
 % De matrix
 De=zeros(5,5);
@@ -34,7 +34,7 @@ De(5,5) = Mh + Mt + 2*m;
 
 % E matrix
 E=zeros(2,5);
-E(1,1) = r*cos(q1 + q2) + r*cos(q1); 
+E(1,1) = r*cos(q1 + q2) - r*cos(q1); 
 E(1,2) = r*cos(q1 + q2); 
 E(1,3) = 0;
 E(1,4) = 1;
@@ -55,9 +55,6 @@ R = [1, 1, 0;...
 %q1 and q2 switch position after impact
 x_plus(1:3) = (R*x(1:3)')';
 x_plus(4:6) = (R*Delta(1:3))';
-
-%x_plus(1) = x(2);x_plus(2) = x(1);x_plus(3) = x(3);
-%x_plus(4) = temp(2);x_plus(5) = temp(1);x_plus(6) = temp(3);
 
 f2 = Delta(5);
 x_plus(7) = Delta(6);
