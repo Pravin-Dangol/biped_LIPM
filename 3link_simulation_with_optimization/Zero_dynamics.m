@@ -2,8 +2,8 @@
 function Zero_dynamics()
 
 f = [-0.2618 -2 0 0.20 0.5236 2.0944 2.50 2.618];
-f = [-0.4821   -1.0029    0.1918    0.3672    0.6869  2.3175    2.2645    2.8316];
-f = [-0.4431   -1.1779   0.1702    0.5189    0.6723    1.9   2.5944    2.8558];
+f = [-0.4821   -4.687    0.1918    0.3672    0.6869  2.3175    2.2645    2.8316];
+%f = [-0.4431   -1.1779   0.1702    0.5189    0.6723    1.9   2.5944    2.8558];
 delq = -2*abs(deg2rad(15)); 
 z_plus = 0; M = 4; 
 
@@ -37,7 +37,7 @@ impact_ = [z_minus; z_plus];
 states_full = map_z_to_x(z_plus,a);
 
 refine = 4; options = odeset('Events',@events,'Refine',refine);
-for i = 1:10  
+for i = 1:1  
     
     [t,z] = ode45(@(t,z) ZD_states(t,z,a), [tstart tfinal], z_plus, options);
         
@@ -69,7 +69,7 @@ for j = 2:m
 end
 
 %
-%Plots impact and states
+%Plots phase portrait with impact
 figure(1)
 plot(states(:,1),states(:,2),'b-.')
 hold on
@@ -92,7 +92,7 @@ legend('q_1','q_2','q_3')
 title('Joint angles')
 subplot(2,1,2)
 plot(time_out,states_full(:,4),time_out,states_full(:,5),'-.',time_out,states_full(:,6),'--')
-legend('$\dot{q_1}$','$\dot{q_2}$','$\dot{q_3}$','Interpreter','latex')
+legend('$\dot{q_1}$','$\dot{q_2}$','$\dot{q_3}$','location','best','Interpreter','latex')
 title('Joint velocities')
 %}
 

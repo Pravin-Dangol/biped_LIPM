@@ -35,9 +35,10 @@ tstart = 0; tfinal = 50;                    %max time per swing
 refine = 4; options = odeset('Events',@events,'Refine',refine);    %'OutputFcn',@odeplot,'OutputSel',1,
 
 time_out = tstart; states = x_plus.'; foot = [];
-time_y = [];
+time_y = [];    
+phase_portrait = [x_minus; x_plus']; phase_x_minus = x_minus; phase_x_plus = x_plus';
 %Simlulation
-for i = 1:10                 %max number of steps allowed (if allowed by tfinal)
+for i = 1:1                 %max number of steps allowed (if allowed by tfinal)
     
     [t,x] = ode45(@(t,x) dx_vector_field(t,x,a), [tstart tfinal], x_plus, options);
     nt = length(t);
@@ -56,7 +57,12 @@ for i = 1:10                 %max number of steps allowed (if allowed by tfinal)
     time_out = [time_out; t(2:nt)]; time_y = [time_y; t(1:nt)];
     states = [states;x(2:nt,:)];    
     foot = [foot; (x(1,1)+x(end,1))/2*ones(length(x(:,1)),1) + states(end,1)  - x(end,1)]; %remember foot location
+    %for error
     y = [y; output(x(1:nt,:),a,x_plus,delq)];
+    %for phase portrait
+    phase_x_minus = [phase_x_minus; x(nt,:)];
+    temp_x = impact_map(phase_x_minus(end,:)); 
+    phase_x_plus = [phase_x_plus; temp_x(1:6)];
     
     %Setting the new initial conditions based on impact map
     [x_plus,~] = impact_map(x(end,:));
@@ -64,28 +70,49 @@ for i = 1:10                 %max number of steps allowed (if allowed by tfinal)
         
 end
 
+[rows,~] = size(phase_x_minus);
+for count = 2:rows
+    phase_portrait = [phase_portrait; phase_x_minus; phase_x_plus];
+end
+
+%{
+%Plots phase portrait with impact
+figure(1)
+plot(states(:,1),states(:,4),'b-.')
+hold on
+[rows,~] = size(phase_portrait); count = 1;
+for count_k = 1:rows-2
+    plot(phase_portrait(count:count+1,1),phase_portrait(count:count+1,4),'rx-')
+    count =  count_k+2;
+end
+hold off
+legend('swing phase','impact','location','best','Interpreter','latex')
+xlabel('q_1'); ylabel('$\dot{q_1}$','Interpreter','latex')
+%}
+
 %
 %Plots of states
-figure(1)
+figure(2)
 subplot(2,1,1)
 plot(time_out,states(:,1),time_out,states(:,2),'-.',time_out,states(:,3),'--')
-legend('\theta_1','\theta_2','\theta_3')
+legend('\theta_1','\theta_2','\theta_3','location','best')
 title('Joint angles')
 subplot(2,1,2)
 plot(time_out,states(:,4),time_out,states(:,5),'-.',time_out,states(:,6),'--')
-legend('$\dot{\theta_1}$','$\dot{\theta_2}$','$\dot{\theta_3}$','Interpreter','latex')
+legend('$\dot{\theta_1}$','$\dot{\theta_2}$','$\dot{\theta_3}$','location','best','Interpreter','latex')
 title('Joint velocities')
 %}
 
-%{
+%
 %Plot of error
+figure(3)
 plot(time_y,y(:,1))
 hold on
 plot(time_y,y(:,2))
 plot(time_y,y(:,3))
 plot(time_y,y(:,4))
 hold off
-legend('y1','y2','dy1','dy2')
+legend('y1','y2','dy1','dy2','location','best')
 %}
 
 %{
@@ -116,7 +143,7 @@ function out = output(x,a,x_plus,delq)
         
         h = [q2 - b2; q3 - b3];         %y = h(x) = Hq - hd
         [D,C,G,~] = state_matrix(x(k,:));
-        Fx = [x(k,4)/delq; x(k,5:6)'; D\(-C*x(k,4:6)'-G)];
+        Fx = [x(k,4:6)'; D\(-C*x(k,4:6)'-G)];
         dh_dx = [ 0, 1, 0, 0, 0, 0;...
             0, 0, 1, 0, 0, 0];
         dh_dx(1,1) = -d_ds_bezier(s,4,a2)/delq;
@@ -144,8 +171,7 @@ end
         %Computes vector field x_dot = f(x) + g(x)*u
         %Required inputs: x - all states [q; q_dot] and a - Bezier coeffs
         
-        t_temp = num2cell(x(1:3)); [q1, q2, q3] = t_temp{:};
-        dt_temp = num2cell(x(4:6)); [dq1, ~, ~] = dt_temp{:};
+        q1 = x(1); q2 = x(2); q3 = x(3); dq1 = x(4);
         
         [D,C,G,B] = state_matrix(x);
         
@@ -198,8 +224,8 @@ end
         %PD control
         eps = 0.1;
         Kp = diag([10/eps,10/eps]);
-        Kd = diag([10/eps^2,10/eps^2]);
-        v = -(Kp*h + Kd*dh_dx*Fx);
+        Kd = diag([100/eps^2,100/eps^2]);
+        v = -(Kp*h + Kd*Lfh);
         %}
         
         u = (dLfh*Gx)\(v - dLfh*Fx);    %u = LgLfh^-1*(v - L2fh) 
@@ -210,8 +236,7 @@ end
 %
     function q = map_z_to_x(z,a)
         
-        q1 = z(1);
-        dq1 = z(2);
+        q1 = z(1); dq1 = z(2);
         a2 = a(1:5); a3 = a(6:end);
         
         M = 4;
