@@ -4,6 +4,8 @@ function Zero_dynamics()
 f = [-0.2618 -2 0 0.20 0.5236 2.0944 2.50 2.618];
 f = [-0.4821   -4.687    0.1918    0.3672    0.6869  2.3175    2.2645    2.8316];
 %f = [-0.4431   -1.1779   0.1702    0.5189    0.6723    1.9   2.5944    2.8558];
+f = [-0.2572   -2.323    0.4042    0.4023    0.6999    2.4497    2.4554    2.5827];
+f = [-0.1996   -1.2644    0.2264    0.3723    0.4652    2.4128    2.5449   2.5424];
 delq = -2*abs(deg2rad(15)); 
 z_plus = 0; M = 4; 
 
@@ -37,7 +39,7 @@ impact_ = [z_minus; z_plus];
 states_full = map_z_to_x(z_plus,a);
 
 refine = 4; options = odeset('Events',@events,'Refine',refine);
-for i = 1:1  
+for i = 1:10  
     
     [t,z] = ode45(@(t,z) ZD_states(t,z,a), [tstart tfinal], z_plus, options);
         
@@ -73,10 +75,12 @@ end
 figure(1)
 plot(states(:,1),states(:,2),'b-.')
 hold on
-[m,~] = size(impact_); count = 1;
-for k = 1:m-2
+[m,~] = size(impact_);
+for count = 1:2:m
     plot(impact_(count:count+1,1),impact_(count:count+1,2),'rx-')
-    count =  k+2;
+    if count == m
+        plot(impact_(count,1),impact_(count,2),'rx')
+    end
 end
 hold off
 legend('swing phase','impact','location','best','Interpreter','latex')

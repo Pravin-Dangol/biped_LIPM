@@ -3,8 +3,10 @@ function Full_dynamics()
 %Output of fmincon [q1, q1_dot, alpha]
 f = [-0.2618 -4 0 0.20 0.5236 2.0944 2.50 2.618];
 f = [-0.4821   -4.687    0.1918    0.3672    0.6869  2.3175    2.2645    2.8316];
+%other working ICs:
 %f = [-0.4431   -1.1779   0.1702    0.5189    0.6723    1.9   2.5944    2.8558];
-M = 4; delq = -deg2rad(30); x_plus = 0; y = []; 
+%f = [-0.1996   -1.2644    0.2264    0.3723    0.4652    2.4128    2.5449   2.5424];
+M = 4; delq = -deg2rad(30); x_plus = 0; 
 
 z_minus = f(1:2);
 %alpha is the Bezier coeffs for q2, gamma for q3
@@ -35,10 +37,10 @@ tstart = 0; tfinal = 50;                    %max time per swing
 refine = 4; options = odeset('Events',@events,'Refine',refine);    %'OutputFcn',@odeplot,'OutputSel',1,
 
 time_out = tstart; states = x_plus.'; foot = [];
-time_y = [];    
+time_y = [];    y = []; 
 phase_portrait = [x_minus; x_plus']; phase_x_minus = x_minus; phase_x_plus = x_plus';
 %Simlulation
-for i = 1:1                 %max number of steps allowed (if allowed by tfinal)
+for i = 1:10                 %max number of steps allowed (if allowed by tfinal)
     
     [t,x] = ode45(@(t,x) dx_vector_field(t,x,a), [tstart tfinal], x_plus, options);
     nt = length(t);
@@ -72,19 +74,22 @@ end
 
 [rows,~] = size(phase_x_minus);
 for count = 2:rows
-    phase_portrait = [phase_portrait; phase_x_minus; phase_x_plus];
+    phase_portrait = [phase_portrait; phase_x_minus(count,:); phase_x_plus(count,:)];
 end
 
-%{
+%
 %Plots phase portrait with impact
 figure(1)
 plot(states(:,1),states(:,4),'b-.')
 hold on
-[rows,~] = size(phase_portrait); count = 1;
-for count_k = 1:rows-2
+[rows,~] = size(phase_portrait); 
+for count = 1:2:rows
     plot(phase_portrait(count:count+1,1),phase_portrait(count:count+1,4),'rx-')
-    count =  count_k+2;
+    if count == rows
+        plot(phase_portrait(count,1),phase_portrait(count,4),'rx')
+    end
 end
+
 hold off
 legend('swing phase','impact','location','best','Interpreter','latex')
 xlabel('q_1'); ylabel('$\dot{q_1}$','Interpreter','latex')
@@ -137,7 +142,7 @@ function out = output(x,a,x_plus,delq)
     [m,~] = size(x);
     for k = 1:m
         q1 = x(k,1); q2 = x(k,2); q3 = x(k,3);
-        s = (x_plus(1) - q1)/delq;         
+        s = (q1 - x_plus(1))/delq;         
         b2 = bezier(s,4,a2);
         b3 = bezier(s,4,a3);
         
@@ -206,8 +211,8 @@ end
             -dq1/delq^2*(12*a33*s^2 - 24*a34*s^2 + 12*a35*s^2 + 12*a31*(s - 1)^2 - 24*a32*(s - 1)^2 + 12*a33*(s - 1)^2 - 24*a34*s*(s - 1) - 12*a32*s*(2*s - 2) + 24*a33*s*(2*s - 2)), 0, 0,...
             -d_ds_bezier(s,4,a3)/delq, 0, 1];      
         
-        %{
-        epsilon = 0.1; alp = 0.9;
+        %
+        epsilon = 0.05; alp = 0.5;
         
         %scaling
         Lfh = epsilon*Lfh;
@@ -220,11 +225,11 @@ end
         
         v = 1/epsilon^2*psi;
         %}
-        %
+        %{
         %PD control
-        eps = 0.1;
+        eps = 0.05;
         Kp = diag([10/eps,10/eps]);
-        Kd = diag([100/eps^2,100/eps^2]);
+        Kd = diag([10/eps^2,10/eps^2]);
         v = -(Kp*h + Kd*Lfh);
         %}
         

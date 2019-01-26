@@ -1,12 +1,12 @@
 % Optimize intial conditions as ZD states and Bezier coeffs using fmincon
 function [f,J] = func_optim_param()
-z_minus = [-0.2618 -2];         %[q1, dq1]
+z_minus = [-0.2618 -1.2];         %[q1, dq1] pre impact conditions - should be negative for both
 %J = 0;                  %initial cost
 z_sol = [];
-delq = 0; %-deg2rad(30);        %inital delq
+%delq = -2*abs(z_minus(1));        %inital delq, should always be negative since q1 is negative pre impact
 %Bezier coefficients
-alpha = [0 0.40 0.5236];            %for q2 - alpha 3 - 5
-gamma = [2.0944 2.50 2.618];        %for q3 - alpha 3 - 5
+alpha = [0.2 0.40 0.5236];            %for q2 - alpha 3 - 5
+gamma = [2.3 2.50 2.618];        %for q3 - alpha 3 - 5
 
 y0 = [z_minus, alpha, gamma];   %parameters that need to be optimized
 
@@ -28,8 +28,9 @@ opts = optimoptions('fmincon','Algorithm','interior-point');
         z_minus = y(1:2);       %Pre-impact states
         z_f = z_sol(end,:);     %final values after swing phase and right before the next impact
         
+        %epsilon = 0.1;
         % Nonlinear inequality constraints
-        c = [];
+        c = [];%[norm(z_minus(1)-z_f(1)) - epsilon^2; norm(z_minus(2)-z_f(2)) - epsilon] 
         % Nonlinear equality constraints
         ceq = [norm(z_minus(1)-z_f(1)); norm(z_minus(2)-z_f(2))];
         
@@ -69,7 +70,7 @@ opts = optimoptions('fmincon','Algorithm','interior-point');
         
         refine = 4; options = odeset('Events',@events,'Refine',refine);
         
-        [~,z_sol] = ode45(@(t,z) ZD_states(t,z,a), [tstart tfinal], z_plus, options);
+        [~,z_sol] = ode45(@(t,z) ZD_states(t,z,a,delq), [tstart tfinal], z_plus, options);
         
         % J = z_sol(end,3);       %last entry of the control input norm integral? Should it not be the last entry?
         
@@ -114,9 +115,9 @@ end
         end
         
         %Zero Dynamics
-        function dz = ZD_states(~,z,a)
+        function dz = ZD_states(~,z,a,delq)
             
-            x = map_z_to_x(z,a);
+            x = map_z_to_x(z,a,delq);
             [D,C,G,B] = state_matrix(x);        %Get state matrix using full states x
             
             % Bezier coefficients for q2
@@ -170,7 +171,7 @@ end
         end
         %}
         
-        function q = map_z_to_x(z,a)
+        function q = map_z_to_x(z,a,delq)
             
             q1 = z(1);
             dq1 = z(2);
