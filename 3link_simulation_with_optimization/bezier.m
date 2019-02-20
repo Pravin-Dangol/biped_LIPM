@@ -2,6 +2,14 @@ function b = bezier(s,M,a)
 
 % Computes the Bezier polynomial
 
+% Inputs:
+%       s: gait timing variable
+%       M: order of polynomial
+%       a: coefficients for polynomial (must be M+1)
+%
+% Output:  
+%       b: Bezier polynomial
+
 %for a normalized general coordinate s = (theta(q) - min(theta))/(max(theta) - min(theta))
 %the function ouputs a 1 dimensional Bezier polynomial of order M
 %the coefficient alpha of size 1 by M+1 must be provided

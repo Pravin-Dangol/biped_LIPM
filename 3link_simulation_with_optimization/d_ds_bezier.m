@@ -2,6 +2,14 @@ function db_ds = d_ds_bezier(s,M,a)
 
 % Computes the partial derivative of Bezier polynomial with respect to s
 
+% Inputs:
+%       s: gait timing variable
+%       M: order of polynomial
+%       a: coefficients for polynomial (must be M+1)
+%
+% Output:  
+%       b: Bezier polynomial
+
 %for a normalized general coordinate s = (theta(q) - min(theta))/(max(theta) - min(theta))
 %the function ouputs a 1 dimensional partial derivative of Bezier polynomial of order M
 %the coefficient alpha of size 1 by M+1 must be provided

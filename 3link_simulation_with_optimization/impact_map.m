@@ -45,18 +45,35 @@ E(2,3) = 0;
 E(2,4) = 0;
 E(2,5) = 1;
 
+dYe_dq = zeros(2,3);
+dYe_dq(1,1) = (Mt*(l*cos(q1 + q3) - r*cos(q1)) + m*((r*cos(q1 + q2))/2 - r*cos(q1)) - (m*r*cos(q1))/2 - Mh*r*cos(q1))/(Mh + Mt + 2*m);
+dYe_dq(1,2) = (m*r*cos(q1 + q2))/(2*(Mh + Mt + 2*m));
+dYe_dq(1,3) = (Mt*l*cos(q1 + q3))/(Mh + Mt + 2*m);
+dYe_dq(2,1) = (Mt*(l*sin(q1 + q3) - r*sin(q1)) + m*((r*sin(q1 + q2))/2 - r*sin(q1)) - Mh*r*sin(q1) - (m*r*sin(q1))/2)/(Mh + Mt + 2*m);
+dYe_dq(2,2) = (m*r*sin(q1 + q2))/(2*(Mh + Mt + 2*m)); 
+dYe_dq(2,3) = (Mt*l*sin(q1 + q3))/(Mh + Mt + 2*m);
+
+dYe_dq = zeros(2,3);
+
 %Impact map from pg56 (3.20)
-Delta = [De -E';E zeros(2,2)]\[De*[x(4:6)';zeros(2,1)];zeros(2,1)]; %7x1
+%Delta = [De -E';E zeros(2,2)]\[De*[x(4:6)';zeros(2,1)];zeros(2,1)]; %7x1
 
 %Is this right? Check again
 R = [1, 1, 0;...
     0, -1, 0;...
     0, -1, 1]; %R*R
-%q1 and q2 switch position after impact
-x_plus(1:3) = (R*x(1:3)')';
-x_plus(4:6) = (R*Delta(1:3))';
 
-f2 = Delta(5);
-x_plus(7) = Delta(6);
-x_plus(8) = Delta(7);
+delta_F2 = -(E*(De\E.'))\E*[eye(3); dYe_dq];
+
+x_plus(1:3) = (R*x(1:3)')';
+%x_plus(4:6) = (R*Delta(1:3))';
+
+% new angular velocities
+x_plus(4:6) = [R, zeros(3,2)]*((De\E.')*delta_F2 + [eye(3); dYe_dq])*x(4:6).';
+
+%f2 = Delta(5);
+%x_plus(7) = Delta(6);
+%x_plus(8) = Delta(7);
+f2 = delta_F2;
+
 end

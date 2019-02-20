@@ -2,11 +2,18 @@
 function Full_dynamics()
 %Output of fmincon [q1, q1_dot, alpha]
 f = [-0.2618 -4 0 0.20 0.5236 2.0944 2.50 2.618];
+%fast dynamics
 f = [-0.4821   -4.687    0.1918    0.3672    0.6869  2.3175    2.2645    2.8316];
+f = [-0.4431   -1.5   0.1702    0.5189    0.6723    1.9   2.5944    2.8558];
 %other working ICs:
 %f = [-0.4431   -1.1779   0.1702    0.5189    0.6723    1.9   2.5944    2.8558];
-%f = [-0.1996   -1.2644    0.2264    0.3723    0.4652    2.4128    2.5449   2.5424];
+%slower dynamics
+%f = [-0.1996   -1.144    0.2264    0.3723    0.4652    2.4128    2.5449   2.5424];
 M = 4; delq = -deg2rad(30); x_plus = 0; 
+
+global u2 time2
+u2 = [];
+time2 = [];
 
 z_minus = f(1:2);
 %alpha is the Bezier coeffs for q2, gamma for q3
@@ -76,7 +83,7 @@ end
 for count = 2:rows
     phase_portrait = [phase_portrait; phase_x_minus(count,:); phase_x_plus(count,:)];
 end
-
+size(t)
 %
 %Plots phase portrait with impact
 figure(1)
@@ -120,10 +127,18 @@ hold off
 legend('y1','y2','dy1','dy2','location','best')
 %}
 
+figure(5)
+plot(time2,u2(1,:))
+hold on
+plot(time2,u2(2,:))
+hold off
+legend('u1','u2','location','best'), xlabel('time (sec)')
+
 %{
 %Stick figure plot
 [hip_posx, leg1, leg2, torso] = motion(time_out,states);
 hip = [hip_posx, zeros(size(hip_posx))];
+figure(4)
 plot(leg1(:,1),leg1(:,2),'o'), hold on
 plot(leg2(:,1),leg2(:,2),'x')
 plot(torso(:,1),torso(:,2),'x'),
@@ -147,7 +162,7 @@ function out = output(x,a,x_plus,delq)
         b3 = bezier(s,4,a3);
         
         h = [q2 - b2; q3 - b3];         %y = h(x) = Hq - hd
-        [D,C,G,~] = state_matrix(x(k,:));
+        [D,C,G,~] = D_C_G_matrix(x(k,:));
         Fx = [x(k,4:6)'; D\(-C*x(k,4:6)'-G)];
         dh_dx = [ 0, 1, 0, 0, 0, 0;...
             0, 0, 1, 0, 0, 0];
@@ -171,14 +186,14 @@ end
         direction = [];       	%The zero can be approached from either direction
     end
 
-    function dx = dx_vector_field(~,x,a)
+    function dx = dx_vector_field(time_in,x,a)
         
         %Computes vector field x_dot = f(x) + g(x)*u
         %Required inputs: x - all states [q; q_dot] and a - Bezier coeffs
         
         q1 = x(1); q2 = x(2); q3 = x(3); dq1 = x(4);
         
-        [D,C,G,B] = state_matrix(x);
+        [D,C,G,B] = D_C_G_matrix(x);
         
         Fx = [x(4:6); D\(-C*x(4:6)-G)];
         Gx = [zeros(3,2);D\B];
@@ -235,35 +250,16 @@ end
         
         u = (dLfh*Gx)\(v - dLfh*Fx);    %u = LgLfh^-1*(v - L2fh) 
         dx = Fx + Gx*u;
-        
+        u2 = [u2, u];
+        time2 = [time2, time_in];
     end
     
-%
-    function q = map_z_to_x(z,a)
-        
-        q1 = z(1); dq1 = z(2);
-        a2 = a(1:5); a3 = a(6:end);
-        
-        M = 4;
-        
-        s = (q1 - z_plus(1))/delq;   %normalized general coordinate
-        
-        q2 = bezier(s,M,a2);
-        q3 = bezier(s,M,a3)';
-        
-        dq2 = d_ds_bezier(s,M,a2)*dq1/delq;
-        dq3 = d_ds_bezier(s,M,a3)*dq1/delq;
-        
-        q = [z(1), q2, q3, z(2), dq2, dq3];
-        
-    end
-%}
 
     function [hip_posx, leg1, leg2, torso] = motion(t,x)
         
         [r,~,~,~,l,~] = model_params_3link;
         
-        hip_velx = cos(x(:,1)).*x(:,4);
+        hip_velx = r*cos(x(:,1)).*x(:,4);     %r*cos(q1)*dq1
         
         [n,~]=size(x);
         hip_posx = zeros(n,1);
@@ -273,8 +269,8 @@ end
         end
         
         leg1 = [hip_posx + r*sin(x(:,1)), -r*cos(x(:,1))];
-        leg2 = [hip_posx - r*sin(x(:,2)), -r*cos(x(:,2))];
-        torso = [hip_posx + l*sin(x(:,3)), l*cos(x(:,3))];
+        leg2 = [hip_posx - r*sin(x(:,2) + x(:,1)), -r*cos(x(:,2) + x(:,1))];
+        torso = [hip_posx + l*sin(pi - x(:,3) - x(:,1)), l*cos(pi - x(:,3) - x(:,1))];
         
     end
 end

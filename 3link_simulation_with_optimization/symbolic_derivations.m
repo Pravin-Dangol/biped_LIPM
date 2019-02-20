@@ -39,6 +39,7 @@ p_Mh = r*[sin(-q1); cos(-q1)] + p_e;
 p_Mt = p_Mh + l*[sin(-q1 + pi - q3); cos(-q1 + pi - q3)];
 p_m1 = r/2*[sin(-q1); cos(-q1)] + p_e;
 p_m2 = p_Mh + r/2*[sin(q1 + q2); -cos(q1 + q2)];
+p_cm = (m*p_m1 + m*p_m2 + Mh*p_Mh + Mt*p_Mt)/(m+m+Mh+Mt);
 P2 = p_Mh + r*[sin(q1 + q2); -cos(q1 + q2)];
 
 dp_Mh = jacobian(p_Mh,q)*dq;
@@ -110,6 +111,8 @@ K = K_m1 + K_Mh + K_Mt + K_m2;
 De = jacobian(jacobian(K,dqe).',dqe); De = simplify(De);
 
 E = jacobian(P2,qe);
+
+dYe_dq = jacobian(p_Mh,qe);
 
 
 %% Bezier poly

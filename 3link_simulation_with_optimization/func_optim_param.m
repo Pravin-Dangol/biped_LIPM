@@ -72,26 +72,6 @@ opts = optimoptions('fmincon','Algorithm','interior-point');
         
         [~,z_sol] = ode45(@(t,z) ZD_states(t,z,a,delq), [tstart tfinal], z_plus, options);
         
-        % J = z_sol(end,3);       %last entry of the control input norm integral? Should it not be the last entry?
-        
-        %{
-%Alternate way to get cost, by summing control input vector, need a
-%function that computes control input
-[m1,~] = size(z);       %get total entries for a single sim
-%map ZD coordinates vector z to vector full_x
-for j = 1:m1
-    full_x(j,:) = map_z_to_x(z,a);
-end
-[m2,~] = size(full_x);  %m2 is same as m1 without sampling
-J = 0;
-%get u for each row of x, get norm 2 of row, then sum to get J
-for i = 1:m2
-    u(i,:) = control_input(full_x(i,:), a);
-    normed_u(i,:) = norm(u(i,:));
-    J = J + normed_u(i,:);
-end
-        %}
-        
         %
         %Event function
         function [limits,isterminal,direction] = events(~,z)
@@ -118,7 +98,7 @@ end
         function dz = ZD_states(~,z,a,delq)
             
             x = map_z_to_x(z,a,delq);
-            [D,C,G,B] = state_matrix(x);        %Get state matrix using full states x
+            [D,C,G,B] = D_C_G_matrix(x);        %Get state matrix using full states x
             
             % Bezier coefficients for q2
             a21 = a(1); a22 = a(2); a23 = a(3); a24 = a(4); a25 = a(5);
