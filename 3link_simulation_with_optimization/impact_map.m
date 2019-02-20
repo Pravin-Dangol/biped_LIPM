@@ -1,10 +1,10 @@
-function [x_plus, f2] = impact_map(x)
+function [x_plus, F2] = impact_map(x_minus)
 
 %Provides impact map for a 3link, with q1 as cyclic variable
 
 [r,m,Mh,Mt,l,~] = model_params_3link;
 
-q1 = x(1); q2 = x(2); q3 = x(3);
+q1 = x_minus(1); q2 = x_minus(2); q3 = x_minus(3);
 
 % De matrix
 De=zeros(5,5);
@@ -53,6 +53,7 @@ dYe_dq(2,1) = (Mt*(l*sin(q1 + q3) - r*sin(q1)) + m*((r*sin(q1 + q2))/2 - r*sin(q
 dYe_dq(2,2) = (m*r*sin(q1 + q2))/(2*(Mh + Mt + 2*m)); 
 dYe_dq(2,3) = (Mt*l*sin(q1 + q3))/(Mh + Mt + 2*m);
 
+% if p_e chosen as origin:
 dYe_dq = zeros(2,3);
 
 %Impact map from pg56 (3.20)
@@ -65,15 +66,15 @@ R = [1, 1, 0;...
 
 delta_F2 = -(E*(De\E.'))\E*[eye(3); dYe_dq];
 
-x_plus(1:3) = (R*x(1:3)')';
+x_plus(1:3) = (R*x_minus(1:3)')';
 %x_plus(4:6) = (R*Delta(1:3))';
 
 % new angular velocities
-x_plus(4:6) = [R, zeros(3,2)]*((De\E.')*delta_F2 + [eye(3); dYe_dq])*x(4:6).';
+x_plus(4:6) = [R, zeros(3,2)]*((De\E.')*delta_F2 + [eye(3); dYe_dq])*x_minus(4:6).';
 
-%f2 = Delta(5);
+%F2 = Delta(5);
 %x_plus(7) = Delta(6);
 %x_plus(8) = Delta(7);
-f2 = delta_F2;
+F2 = delta_F2;
 
 end

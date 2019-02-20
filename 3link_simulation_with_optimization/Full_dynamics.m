@@ -1,14 +1,11 @@
 %Simulates full hybrid dynamics with parametrized output function
 function Full_dynamics()
 %Output of fmincon [q1, q1_dot, alpha]
-f = [-0.2618 -4 0 0.20 0.5236 2.0944 2.50 2.618];
+f = [-0.2618 -2 0 0.20 0.5236 2.0944 2.50 2.618];
 %fast dynamics
-f = [-0.4821   -4.687    0.1918    0.3672    0.6869  2.3175    2.2645    2.8316];
-f = [-0.4431   -1.5   0.1702    0.5189    0.6723    1.9   2.5944    2.8558];
-%other working ICs:
-%f = [-0.4431   -1.1779   0.1702    0.5189    0.6723    1.9   2.5944    2.8558];
-%slower dynamics
-%f = [-0.1996   -1.144    0.2264    0.3723    0.4652    2.4128    2.5449   2.5424];
+%f = [-0.4821   -6.3    0.1918    0.3672    0.6869  2.3175    2.2645    2.8316];
+f = [-0.4431   -2.8   0.1702    0.5189    0.6723    1.9   2.5944    2.8558];
+
 M = 4; delq = -deg2rad(30); x_plus = 0; 
 
 global u2 time2
@@ -41,7 +38,7 @@ x_plus = [x_plus(1), bezier(0,4,alpha), bezier(0,4,gamma), x_plus(4), d_ds_bezie
 
 tstart = 0; tfinal = 50;                    %max time per swing
 
-refine = 4; options = odeset('Events',@events,'Refine',refine);    %'OutputFcn',@odeplot,'OutputSel',1,
+options = odeset('Events',@events);    
 
 time_out = tstart; states = x_plus.'; foot = [];
 time_y = [];    y = []; 
@@ -52,19 +49,11 @@ for i = 1:10                 %max number of steps allowed (if allowed by tfinal)
     [t,x] = ode45(@(t,x) dx_vector_field(t,x,a), [tstart tfinal], x_plus, options);
     nt = length(t);
     
-    %
-    %Stop conditions
-    if tstart >= tfinal || nt-refine < 1
-        break
-    end
-    %}
-    
-    options = odeset(options,'InitialStep',t(nt)-t(nt-refine),'MaxStep',t(nt)-t(1));
     tstart = t(nt);
     
     %Save data
-    time_out = [time_out; t(2:nt)]; time_y = [time_y; t(1:nt)];
-    states = [states;x(2:nt,:)];    
+    time_out = [time_out; t(1:nt)]; time_y = [time_y; t(1:nt)];
+    states = [states;x(1:nt,:)];    
     foot = [foot; (x(1,1)+x(end,1))/2*ones(length(x(:,1)),1) + states(end,1)  - x(end,1)]; %remember foot location
     %for error
     y = [y; output(x(1:nt,:),a,x_plus,delq)];
@@ -187,9 +176,14 @@ end
     end
 
     function dx = dx_vector_field(time_in,x,a)
-        
-        %Computes vector field x_dot = f(x) + g(x)*u
-        %Required inputs: x - all states [q; q_dot] and a - Bezier coeffs
+        % Computes vector field x_dot = f(x) + g(x)*u
+        % Inputs:
+        %       t: time
+        %       x: all states [q, dq]
+        %       a: bezier coefficient for q2 (1:5) and q3 (6:10)
+        %
+        % Outputs:
+        %       dx = [dq, ddq]
         
         q1 = x(1); q2 = x(2); q3 = x(3); dq1 = x(4);
         
@@ -248,7 +242,7 @@ end
         v = -(Kp*h + Kd*Lfh);
         %}
         
-        u = (dLfh*Gx)\(v - dLfh*Fx);    %u = LgLfh^-1*(v - L2fh) 
+        u = (dLfh*Gx)\(v - dLfh*Fx);    
         dx = Fx + Gx*u;
         u2 = [u2, u];
         time2 = [time2, time_in];
@@ -256,6 +250,7 @@ end
     
 
     function [hip_posx, leg1, leg2, torso] = motion(t,x)
+        % Estimate hip horizontal position by estimating integral of hip velocity
         
         [r,~,~,~,l,~] = model_params_3link;
         
@@ -263,7 +258,7 @@ end
         
         [n,~]=size(x);
         hip_posx = zeros(n,1);
-        % Estimate hip horizontal position by estimating integral of hip velocity
+        
         for j=2:n
             hip_posx(j)=hip_posx(j-1)+(t(j)-t(j-1))*hip_velx(j-1,1);
         end

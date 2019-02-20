@@ -100,6 +100,7 @@ title('Joint velocities')
 
 %Event function
     function [limits,isterminal,direction] = events(~,z)
+        % input: z = [q1, dq1]
         
         q1 = z(1);
         s = (q1 - z_plus(1))/delq;   %normalized general coordinate
@@ -113,6 +114,14 @@ title('Joint velocities')
 
 %Zero Dynamics
     function dz = ZD_states(~,z,a)
+        % Compute vector field for zero dynamics
+        % Inputs:
+        %       t: time
+        %       z: cyclic variables [q1, dq1]
+        %       a: bezier coefficient for q2 (1:5) and q3 (6:10)
+        %
+        % Outputs:
+        %       dz = [dq1, ddq1]
         
         x = map_z_to_x(z,a);
         [D,C,G,~] = D_C_G_matrix(x);
@@ -150,6 +159,13 @@ title('Joint velocities')
     end
 
     function q = map_z_to_x(z,a)
+        % Map zero dynamics to full dynamics using bezier coefficients
+        % Inputs:
+        %       z: cyclic variables [q1, dq1]
+        %       a: bezier coefficient for q2 (1:5) and q3 (6:10)
+        %
+        % Outputs:
+        %       q = [q1, q2, q3, dq1, dq2, dq3]
         
         q1 = z(1);
         dq1 = z(2);

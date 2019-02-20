@@ -1,11 +1,11 @@
 % Optimize intial conditions as ZD states and Bezier coeffs using fmincon
 function [f,J] = func_optim_param()
 z_minus = [-0.2618 -1.2];         %[q1, dq1] pre impact conditions - should be negative for both
-%J = 0;                  %initial cost
+
 z_sol = [];
-%delq = -2*abs(z_minus(1));        %inital delq, should always be negative since q1 is negative pre impact
+
 %Bezier coefficients
-alpha = [0.2 0.40 0.5236];            %for q2 - alpha 3 - 5
+alpha = [0.2 0.40 0.5236];       %for q2 - alpha 3 - 5
 gamma = [2.3 2.50 2.618];        %for q3 - alpha 3 - 5
 
 y0 = [z_minus, alpha, gamma];   %parameters that need to be optimized
@@ -95,7 +95,15 @@ opts = optimoptions('fmincon','Algorithm','interior-point');
         end
         
         %Zero Dynamics
-        function dz = ZD_states(~,z,a,delq)
+        function dz = ZD_states(~,z,a,delq)            
+            % Compute vector field for zero dynamics
+            % Inputs:
+            %       t: time
+            %       z: cyclic variables [q1, dq1]
+            %       a: bezier coefficient for q2 (1:5) and q3 (6:10)
+            %
+            % Outputs:
+            %       dz = [dq1, ddq1]
             
             x = map_z_to_x(z,a,delq);
             [D,C,G,B] = D_C_G_matrix(x);        %Get state matrix using full states x
@@ -119,18 +127,15 @@ opts = optimoptions('fmincon','Algorithm','interior-point');
             H2 = C(2:3,2:3)*x(5:6)' + [G(2,1); G(3,1)];
             
             s = (q1 - z_plus(1))/delq;   %normalized general coordinate
-            %x(2),s
-            % d/ds(db/ds*s_dot)
+            
             dLsb2 = -dq1/delq*(3*s^2*(4*a24 - 4*a25) - s^2*(12*a23 - 12*a24) - 3*(s - 1)^2*(4*a21 - 4*a22) +...
                 (s - 1)^2*(12*a22 - 12*a23) - 2*s*(s - 1)*(12*a23 - 12*a24) + s*(2*s - 2)*(12*a22 - 12*a23));
             
             dLsb3 = -dq1/delq*(3*s^2*(4*a34 - 4*a35) - s^2*(12*a33 - 12*a34) - 3*(s - 1)^2*(4*a31 - 4*a32) +...
                 (s - 1)^2*(12*a32 - 12*a33) - 2*s*(s - 1)*(12*a33 - 12*a34) + s*(2*s - 2)*(12*a32 - 12*a33));
             
-            % beta1 =  d/ds(db/ds*s_dot)*s_dot
             beta1 = [dLsb2; dLsb3]*dq1/delq;
             
-            % beta2 =  db/ds*s_dot
             db_ds2 = d_ds_bezier(s,4,a_2);
             db_ds3 = d_ds_bezier(s,4,a_3);
             
@@ -143,15 +148,20 @@ opts = optimoptions('fmincon','Algorithm','interior-point');
             dz(1) = z(2);
             dz(2) = (D1 + D2*beta2)\(-D2*beta1 - H1);
             
-            %Setting the derivative of the cost function as a state, from pg155
-            %dz(3) = norm(u);
             J = J + norm(u);
             dz = [dz(1), dz(2)]';
             
         end
         %}
         
-        function q = map_z_to_x(z,a,delq)
+        function q = map_z_to_x(z,a,delq)            
+            % Map zero dynamics to full dynamics using bezier coefficients
+            % Inputs:
+            %       z: cyclic variables [q1, dq1]
+            %       a: bezier coefficient for q2 (1:5) and q3 (6:10)
+            %
+            % Outputs:
+            %       q = [q1, q2, q3, dq1, dq2, dq3]
             
             q1 = z(1);
             dq1 = z(2);

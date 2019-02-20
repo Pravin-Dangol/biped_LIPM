@@ -1,4 +1,11 @@
-function [D,C,G,B] = state_matrix(x)
+function [D,C,G,B] = D_C_G_matrix(x)
+
+% Inputs:
+%       x: [q, dq]
+%       
+% Outputs:       
+%       inertia, coriolis, gravity and B matrix - obtained from
+%       symbolic_derivation.m
 
 [r,m,Mh,Mt,l,g] = model_params_3link;
 
